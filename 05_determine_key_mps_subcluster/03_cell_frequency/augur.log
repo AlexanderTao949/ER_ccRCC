@@ -1,5 +1,4 @@
 nohup: ignoring input
-Attaching SeuratObject
 ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
 ✔ dplyr     1.1.4     ✔ readr     2.1.6
 ✔ forcats   1.0.1     ✔ stringr   1.6.0
@@ -10,16 +9,8 @@ Attaching SeuratObject
 ✖ dplyr::filter() masks stats::filter()
 ✖ dplyr::lag()    masks stats::lag()
 ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
-Calculating cluster 0
-Calculating cluster 1
-Calculating cluster 10
-Calculating cluster 11
-Calculating cluster 12
-Calculating cluster 2
-Calculating cluster 3
-Calculating cluster 4
-Calculating cluster 5
-Calculating cluster 6
-Calculating cluster 7
-Calculating cluster 8
-Calculating cluster 9
+Registered S3 method overwritten by 'spatstat.geom':
+  method       from     
+  print.metric yardstick
+Attaching SeuratObject
+using default assay: RNA ...
