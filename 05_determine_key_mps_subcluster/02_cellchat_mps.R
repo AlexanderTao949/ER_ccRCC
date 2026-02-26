@@ -4,7 +4,7 @@ library(tidyverse)
 library(CellChat)
 library(ggplot2)
 Run_CellChat <- function(seu){
-  cellchat <- createCellChat(object = seu, group.by = "major_celltype", assay = "RNA")
+  cellchat <- createCellChat(object = seu, group.by = "cell_type_mps", assay = "RNA")
   
   CellChatDB <- CellChatDB.human 
   showDatabaseCategory(CellChatDB)
@@ -13,7 +13,7 @@ Run_CellChat <- function(seu){
   
   cellchat <- subsetData(cellchat) 
   options(future.globals.maxSize = 100 * 1024^3) 
-  future::plan("multisession", workers = 10) 
+  future::plan("multisession", workers = 30) 
   cellchat <- identifyOverExpressedGenes(cellchat)
   cellchat <- identifyOverExpressedInteractions(cellchat)
   cellchat <- smoothData(cellchat, adj = PPI.human)
@@ -25,7 +25,17 @@ Run_CellChat <- function(seu){
 }
 
 #### Load data and processing ####
-seu <- qs::qread("~/projects/Everolimus_Resistance_ccRCC/analysis/data/02_scRNA_data_process/05_pseudobulk_groups/04_seu_group.qs", nthread = 50)
+seu <- qs::qread("~/projects/Everolimus_Resistance_ccRCC/analysis/data/02_scRNA_data_process/05_pseudobulk_groups/04_seu_group.qs", nthreads = 50)
+seu_mps <- qs::qread("~/projects/Everolimus_Resistance_ccRCC/analysis/data/04_MPS_subcluster_analysis/02_annotation/03_mps_anno.qs", nthreads = 50)
+meta <- seu@meta.data
+meta_mps <- seu_mps@meta.data
+
+matched_indices <- match(rownames(meta), rownames(meta_mps))
+meta$cell_type_mps <- meta$major_celltype
+meta$cell_type_mps[!is.na(matched_indices)] <- meta_mps$mps_celltype[matched_indices[!is.na(matched_indices)]]
+seu@meta.data <- meta
+seu <- subset(seu, subset = cell_type_mps == "Mononuclear_Phagocytes", invert = TRUE)
+
 seu_high <- subset(seu, subset = ERScore_group == "High_ERScore")
 seu_low <- subset(seu, subset = ERScore_group == "Low_ERScore")
 
@@ -34,9 +44,9 @@ cellchat_high <- Run_CellChat(seu_high)
 cellchat_low <- Run_CellChat(seu_low)
 object.list <- list(High_ERScore = cellchat_high, Low_ERScore = cellchat_low)
 cellchat <- mergeCellChat(object.list, add.names = names(object.list))
-qs::qsave(cellchat_high, file = "~/projects/Everolimus_Resistance_ccRCC/analysis/data/03_determine_key_major_celltype/02_CellChat_major_celltype/01_cellchat_high.qs")
-qs::qsave(cellchat_low, file = "~/projects/Everolimus_Resistance_ccRCC/analysis/data/03_determine_key_major_celltype/02_CellChat_major_celltype/01_cellchat_low.qs")
-qs::qsave(cellchat, file = "~/projects/Everolimus_Resistance_ccRCC/analysis/data/03_determine_key_major_celltype/02_CellChat_major_celltype/01_cellchat_merge.qs")
+qs::qsave(cellchat_high, file = "~/projects/Everolimus_Resistance_ccRCC/analysis/data/05_determine_key_mps_subcluster/02_cellchat_mps/01_cellchat_high.qs")
+qs::qsave(cellchat_low, file = "~/projects/Everolimus_Resistance_ccRCC/analysis/data/05_determine_key_mps_subcluster/02_cellchat_mps/01_cellchat_low.qs")
+qs::qsave(cellchat, file = "~/projects/Everolimus_Resistance_ccRCC/analysis/data/05_determine_key_mps_subcluster/02_cellchat_mps/01_cellchat_merge.qs")
 
 
 # cellchat_high <- qs::qread("~/projects/Everolimus_Resistance_ccRCC/data/05_cellchat_all/01_cellchat_high.qs", nthreads = 25)

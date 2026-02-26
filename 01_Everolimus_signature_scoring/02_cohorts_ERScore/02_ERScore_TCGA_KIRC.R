@@ -57,9 +57,13 @@ ggsave(filename = "analysis/figure/01_Everolimus_signature_scoring/02_cohorts_ER
 #### Cox ####
 dat_cox <- TCGA_dat %>% dplyr::select(-c("DSS", "DSS.time", "DFI", "DFI.time", "PFI", "PFI.time")) 
 colnames(dat_cox) <- c("OS", "OS_time", "Gender", "Age", "Stage", "T_stage", "N_stage", "M_stage", "Tumor_grade", "ERScore")
-dat_cox <- na.omit(dat_cox)
 dat_cox$Stage <- gsub(" ", "_", dat_cox$Stage)
-dat_cox <- dat_cox %>% 
+
+
+##### Uni Cox ####
+data.use <- dat_cox
+data.use <- na.omit(data.use)
+data.use <- data.use %>% 
   dplyr::mutate(Gender = factor(Gender, levels = c("male", "female")) %>% as.numeric(),
                 Age = Age %>% as.numeric(),
                 Stage = factor(Stage, levels = c("Stage_I", "Stage_II", "Stage_III", "Stage_IV")) %>% as.numeric(),
@@ -68,21 +72,30 @@ dat_cox <- dat_cox %>%
                 M_stage = factor(M_stage, levels = c( "M0", "M1")) %>% as.numeric(),
                 Tumor_grade = factor(Tumor_grade, levels = c("G1", "G2", "G3", "G4")) %>% as.numeric(),
                 ERScore = ERScore %>% as.numeric())
-
-##### Uni Cox ####
-uni_cox <- UniCox(cox_data = dat_cox,
+uni_cox <- UniCox(cox_data = data.use,
                   surv_event_col = "OS",
                   surv_time_col = "OS_time",
                   vars = c("Gender", "Age", "Stage", "T_stage", "N_stage", "M_stage", "Tumor_grade", "ERScore"))
+qs::qsave(uni_cox, file = "analysis/data/01_Everolimus_signature_scoring/02_cohorts_ERScore/02_ERScore_TCGA_KIRC/02_TCGA_ERScore_unicox.qs")
 pdf("analysis/figure/01_Everolimus_signature_scoring/02_cohorts_ERScore/02_ERScore_TCGA_KIRC/coxplot/unicox_OS.pdf", width = 7.95, height = 4.43)
 CoxForestPlot(uni_cox)
 dev.off()
 
 ##### Muti Cox #####
-multi_cox <- MutiCox(cox_data = dat_cox,
+data.use <- dat_cox[,c("OS_time", "OS", "Gender", "Age", "Stage", "T_stage", "Tumor_grade", "ERScore")]
+data.use <- na.omit(data.use)
+data.use <- data.use %>% 
+  dplyr::mutate(Gender = factor(Gender, levels = c("male", "female")) %>% as.numeric(),
+                Age = Age %>% as.numeric(),
+                Stage = factor(Stage, levels = c("Stage_I", "Stage_II", "Stage_III", "Stage_IV")) %>% as.numeric(),
+                T_stage = factor(T_stage, levels = c("T1", "T2", "T3", "T4")) %>% as.numeric(),
+                Tumor_grade = factor(Tumor_grade, levels = c("G1", "G2", "G3", "G4")) %>% as.numeric(),
+                ERScore = ERScore %>% as.numeric())
+multi_cox <- MutiCox(cox_data = data.use,
                      surv_event_col = "OS",
                      surv_time_col = "OS_time",
-                     vars = c("Gender", "Age", "T_stage", "N_stage", "M_stage", "Tumor_grade", "ERScore"))
+                     vars = c("Gender", "Age", "Stage", "T_stage", "Tumor_grade", "ERScore"))
+qs::qsave(multi_cox, file = "analysis/data/01_Everolimus_signature_scoring/02_cohorts_ERScore/02_ERScore_TCGA_KIRC/02_TCGA_ERScore_multicox.qs")
 pdf("analysis/figure/01_Everolimus_signature_scoring/02_cohorts_ERScore/02_ERScore_TCGA_KIRC/coxplot/multicox_OS.pdf", width = 7.95, height = 4.43)
 CoxForestPlot(multi_cox)
 dev.off()
@@ -119,7 +132,19 @@ PlottimeROC(
 dev.off()
 
 #### Nomogram ####
+dat_cox <- na.omit(dat_cox)
+dat_cox <- dat_cox %>% 
+  dplyr::mutate(Gender = factor(Gender, levels = c("male", "female")) %>% as.numeric(),
+                Age = Age %>% as.numeric(),
+                Stage = factor(Stage, levels = c("Stage_I", "Stage_II", "Stage_III", "Stage_IV")) %>% as.numeric(),
+                T_stage = factor(T_stage, levels = c("T1", "T2", "T3", "T4")) %>% as.numeric(),
+                N_stage = factor(N_stage, levels = c("N0", "N1")) %>% as.numeric(),
+                M_stage = factor(M_stage, levels = c( "M0", "M1")) %>% as.numeric(),
+                Tumor_grade = factor(Tumor_grade, levels = c("G1", "G2", "G3", "G4")) %>% as.numeric(),
+                ERScore = ERScore %>% as.numeric())
 mul_cox_rms <- cph(Surv(OS_time, OS) ~ Gender+Age+Stage+T_stage+N_stage+M_stage+Tumor_grade+ERScore, data = dat_cox, x = TRUE, y = TRUE, surv = TRUE)
+
+pdf("manuscript_figure/Figure1/nomogram.pdf", width = 9.22, height = 4.92)
 regplot(mul_cox_rms,
         points = TRUE,                      # 在列线图上显示点
         plots = c("density", "no plot"),    # 设置要显示的图表类型，这里包括密度图和无图表
@@ -132,5 +157,4 @@ regplot(mul_cox_rms,
         rank = "range",                     # 根据统计学差异的显著性进行变量的排序
         interval = "confidence",            # 使用置信区间进行可视化
         title = "Nomogram (Cox regression TCGA-KIRC OS)")           # 设置图表的标题
-
-
+dev.off()

@@ -73,7 +73,7 @@ ora_go_res <- enrichGO(gene          = entrez,
                        keyType       = "ENTREZID",
                        universe      = univers_entrez,
                        OrgDb         = org.Hs.eg.db,
-                       ont           = "BP",
+                       ont           = "ALL",
                        pAdjustMethod = "BH",
                        minGSSize     = 0,
                        maxGSSize     = 1000000,
@@ -87,9 +87,7 @@ qs::qsave(ora_go_res, file = "analysis/data/01_Everolimus_signature_scoring/01_E
 
 gsea_go_res <- gseGO(geneList     = entrez_list,
                      OrgDb        = org.Hs.eg.db,
-                     ont          = "BP",
-                     minGSSize    = 0,
-                     maxGSSize    = 1000000,
+                     ont          = "ALL",
                      pvalueCutoff = 0.05,
                      verbose      = TRUE)
 gsea_go_res <- setReadable(gsea_go_res,
@@ -99,24 +97,37 @@ gsea_go_res@result <- subset(gsea_go_res@result, NES > 0 & p.adjust < 0.05)
 gsea_go_dat <- as.data.frame(gsea_go_res) %>% arrange(desc(NES))
 qs::qsave(gsea_go_res, file = "analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/02_gsea_go.qs")
 
+gsea_gobp <- gseGO(geneList     = entrez_list,
+                   OrgDb        = org.Hs.eg.db,
+                   ont          = "BP",
+                   pvalueCutoff = 0.05,
+                   verbose      = TRUE)
+gsea_gobp <- setReadable(gsea_gobp,
+                         OrgDb = "org.Hs.eg.db",
+                         keyType = "ENTREZID")
+gsea_gobp@result <- subset(gsea_gobp@result, NES > 0 & p.adjust < 0.05)
+gsea_gobp_dat <- as.data.frame(gsea_gobp) %>% arrange(desc(NES))
+qs::qsave(gsea_gobp, file = "analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/02_gsea_go_bp.qs")
+
 ##### rrvgo #####
-simMatrix <- calculateSimMatrix(gsea_go_dat$ID,
+simMatrix <- calculateSimMatrix(gsea_gobp_dat$ID,
                                 orgdb = "org.Hs.eg.db",
                                 ont = "BP",
                                 method = "Wang")
-scores <- setNames(gsea_go_dat$NES, gsea_go_dat$ID)
+scores <- setNames(gsea_gobp_dat$NES, gsea_gobp_dat$ID)
 reducedTerms <- reduceSimMatrix(simMatrix,
                                 scores,
                                 threshold=0.7,
                                 orgdb="org.Hs.eg.db")
 qs::qsave(reducedTerms, file = "analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/02_rrvgo.qs")
 
-gsea_go_res <- qs::qread("analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/02_gsea_go.qs")
-# reducedTerms <- qs::qread("analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/02_rrvgo.qs")
-# gsea_go_res@result <- subset(gsea_go_res@result, ID %in% reducedTerms$parent)
-prompt <- interpret_tool(gsea_go_res, database = "GO", pathway_num = 50, diff_genes, contact_LLM = FALSE,
+gsea_gobp <- qs::qread("analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/02_gsea_go_bp.qs")
+reducedTerms <- qs::qread("analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/02_rrvgo.qs")
+gsea_gobp@result <- subset(gsea_gobp@result, ID %in% reducedTerms$parent)
+qs::qsave(gsea_gobp, file = "analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/02_gsea_go_bp_rrvgo.qs")
+prompt <- interpret_tool(gsea_gobp, database = "GO", pathway_num = 30, diff_genes, contact_LLM = FALSE,
                          context = "786-0 cells were treated with either a control DMSO vehicle or 10um Everolimus, an mTOR inhibitor, for 4 hours.")
-writeLines(prompt, "analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/prompt/gsea_go.txt")
+writeLines(prompt, "analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/prompt/gsea_go_bp.txt")
 
 ##### KEGG #####
 ora_kegg_res <- enrichKEGG(gene         = entrez,
@@ -145,7 +156,7 @@ gsea_kegg_res@result <- subset(gsea_kegg_res@result, NES > 0 & p.adjust < 0.05)
 qs::qsave(gsea_kegg_res, file = "analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/03_gsea_kegg.qs")
 
 gsea_kegg_res <- qs::qread("analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/03_gsea_kegg.qs")
-prompt <- interpret_tool(gsea_kegg_res, database = "KEGG", diff_genes, pathway_num = 50, contact_LLM = FALSE,
+prompt <- interpret_tool(gsea_kegg_res, database = "KEGG", diff_genes, pathway_num = 30, contact_LLM = FALSE,
                          context = "786-0 cells were treated with either a control DMSO vehicle or 10um Everolimus, an mTOR inhibitor, for 4 hours.")
 writeLines(prompt, "analysis/data/01_Everolimus_signature_scoring/01_Everolimus_treat_enrich_4h/prompt/gsea_kegg.txt")
 

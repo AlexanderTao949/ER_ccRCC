@@ -48,14 +48,14 @@ p <- Heatmap(Roe,
              show_column_names = TRUE,
              show_row_names = TRUE,
              col = col_fun,
-             width = unit(ncol(Roe_matrix) * 1, "cm"),   
-             height = unit(nrow(Roe_matrix) * 0.75, "cm"),    
+             width = unit(ncol(Roe) * 1, "cm"),   
+             height = unit(nrow(Roe) * 0.75, "cm"),    
              row_names_gp = gpar(fontsize = 10),
              column_names_rot = 45,                 
              column_names_gp = gpar(fontsize = 10), 
              heatmap_legend_param = list(
                title = "Ro/e",
-               at = c(0, max(Roe_matrix, na.rm = TRUE)),
+               at = c(0, max(Roe, na.rm = TRUE)),
                labels = c("0", "Max.")
              ),
              cell_fun = function(j, i, x, y, width, height, fill) {
