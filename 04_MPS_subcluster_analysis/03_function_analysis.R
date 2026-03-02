@@ -56,6 +56,7 @@ kegg_ora <- setReadable(kegg_ora,
                         OrgDb = org.Hs.eg.db,
                         keyType="ENTREZID")
 kegg_ora@compareClusterResult <- subset(kegg_ora@compareClusterResult, p.adjust < 0.05)
+kegg_ora_dat <- as.data.frame(kegg_ora)
 qs::qsave(kegg_ora, file = "analysis/data/04_MPS_subcluster_analysis/03_function_analysis/02_kegg_ora.qs")
 
 #### GSEA ####

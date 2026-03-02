@@ -13,7 +13,7 @@ Run_CellChat <- function(seu){
   
   cellchat <- subsetData(cellchat) 
   options(future.globals.maxSize = 100 * 1024^3) 
-  future::plan("multisession", workers = 30) 
+  future::plan("multisession", workers = 8) 
   cellchat <- identifyOverExpressedGenes(cellchat)
   cellchat <- identifyOverExpressedInteractions(cellchat)
   cellchat <- smoothData(cellchat, adj = PPI.human)
@@ -35,6 +35,7 @@ meta$cell_type_mps <- meta$major_celltype
 meta$cell_type_mps[!is.na(matched_indices)] <- meta_mps$mps_celltype[matched_indices[!is.na(matched_indices)]]
 seu@meta.data <- meta
 seu <- subset(seu, subset = cell_type_mps == "Mononuclear_Phagocytes", invert = TRUE)
+seu$samples <- seu$orig.ident
 
 seu_high <- subset(seu, subset = ERScore_group == "High_ERScore")
 seu_low <- subset(seu, subset = ERScore_group == "Low_ERScore")

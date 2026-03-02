@@ -48,4 +48,5 @@ Set cell identities for the new CellChat object
 The cell groups used for CellChat analysis are  B_Cells, CD4_T_Cells, CD8_T_Cells, cDC1_CCSER1, cDC2_FCER1A, Endothelial_Cells, Fibroblast, Maph_Inflam_CCL3, Maph_LA_APOE, Mast_Cells, Mono_CD14_S100A8, Mono_CD16_TCF7L2, Natural_Killer_Cells, Tumor_Cells 
 The number of highly variable ligand-receptor pairs used for signaling inference is 2031 
 triMean is used for calculating the average gene expression per cell group. 
-[1] ">>> Run CellChat on sc/snRNA-seq data <<< [2026-02-26 10:37:40.429761]"
+[1] ">>> Run CellChat on sc/snRNA-seq data <<< [2026-03-02 18:33:39.492774]"
+  |                                                                              |                                                                      |   0%  |                                                                              |                                                                      |   1%

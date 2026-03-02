@@ -41,3 +41,8 @@ The following object is masked from ‘package:base’:
 
     union
 
+开始监控进程 1025334，日志保存至: cellchat_monitor_20260302_164823.log
+开始监控进程 1025334，日志保存至: cellchat_monitor_20260302_165046.log
+进程 1025334 已结束，监控停止
+开始监控进程 1072227，日志保存至: cellchat_monitor_20260302_165149.log
+进程 1072227 已结束，监控停止
