@@ -9,10 +9,10 @@ library(reticulate)
 use_condaenv("scrublet")
 
 #### Load data and process ####
-dir <- "analysis/data/ccRCC_scRNA_data/GSE207493/"
+dir <- "./scRNA_upstream/cellranger_results/"
 files <- list.files(dir)
 seulist <- pbmcapply::pbmclapply(files, function(x){
-  path <- file.path(dir, x)
+  path <- file.path(dir, x, "outs/filtered_feature_bc_matrix")
   scdata <- Read10X(path)
   colnames(scdata) <- paste(x, colnames(scdata), sep = "_")
   seu <- CreateSeuratObject(scdata, project = x, min.cells=3, min.features=200)
@@ -42,6 +42,9 @@ plots_list <- lapply(metrics, function(x){p <- PlotMultiQC(seulist_qc, x, y_limi
 combined_plot <- patchwork::wrap_plots(plots_list, ncol = 3)
 ggsave("analysis/figure/02_scRNA_data_process/01_data_qc/01_qc_plot_all.pdf", combined_plot, width = 15, height = 15)
 
+seulist_qc <- seulist_qc[setdiff(names(seulist_qc), c("RCC101", "RCC115"))]
+qs::qsave(seulist_qc, file = "analysis/data/02_scRNA_data_process/01_data_qc/02_seulist_qc_filter.qs", nthreads = 50)
+
 #### Filter ####
 seu_new_list <- NULL
 for(i in names(seulist_qc)){
@@ -50,7 +53,6 @@ for(i in names(seulist_qc)){
   seu <- sample_qc(seu, plotdir = "analysis/figure/02_scRNA_data_process/01_data_qc/02_qc_samples_plot", filename = i)
   seu_new_list[[i]] <- seu
 }
-
 qs::qsave(seu_new_list, file = "analysis/data/02_scRNA_data_process/01_data_qc/03_seulist_clean.qs", nthreads = 50)
 
 #### Merge data ####
