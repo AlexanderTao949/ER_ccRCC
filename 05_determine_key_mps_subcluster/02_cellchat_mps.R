@@ -50,63 +50,74 @@ qs::qsave(cellchat_low, file = "~/projects/Everolimus_Resistance_ccRCC/analysis/
 qs::qsave(cellchat, file = "~/projects/Everolimus_Resistance_ccRCC/analysis/data/05_determine_key_mps_subcluster/02_cellchat_mps/01_cellchat_merge.qs")
 
 
-# cellchat_high <- qs::qread("~/projects/Everolimus_Resistance_ccRCC/data/05_cellchat_all/01_cellchat_high.qs", nthreads = 25)
-# 
-# p <- netVisual_bubble(cellchat_high, 
-#                       sources.use = 1:9,            
-#                       targets.use = 10, 
-#                       remove.isolate = FALSE,      
-#                       signaling = "TNF",    
-#                       grid.on = T,                 
-#                       color.grid = "black")
-# 
-# range(p$data$pval, na.rm = T)  # 查看通信概率(prob)的范围
-# summary(p$data$prob, na.rm = T) # 查看概率的统计摘要
-# 
-# p1 <- p + 
-#   scale_size_continuous(range = c(3, 9),
-#                         breaks = c(1, 3),
-#                         labels = c("p > 0.05", "p < 0.01"),
-#                         name = "P-Value")+  
-#   scale_color_gradientn(
-#     colours = c("#2760a9", "white", "#e50f20"),
-#     values = scales::rescale(c(0.1058550, 0.1307231, 0.1555912)),  
-#     breaks = c(0.1058550, 0.1555912),  
-#     labels = c("min", "max"),     
-#     name = "Commun. Prob."
-#   ) +
-#   coord_fixed(ratio = 1) +
-#   xlab(NULL) + 
-#   ylab(NULL) +
-#   theme(
-#     axis.text.x = element_text(
-#       size = 14, 
-#       angle = 90,
-#       hjust = 1
-#     ),
-#     axis.text.y = element_text(
-#       size = 14, 
-#       face = "italic"
-#     ),
-#     panel.border = element_rect(
-#       color = "black", 
-#       fill = NA, 
-#       size = 1
-#     ),
-#     legend.key.size = unit(1, 'cm'),
-#     legend.spacing.x = unit(0.5, "cm"),
-#     legend.text = element_text(size = 12),
-#     legend.title = element_text(
-#       size = 13, 
-#       face = "bold",
-#       margin = margin(b = 10)
-#     ),
-#     legend.box = "horizontal",
-#     legend.direction = "vertical",
-#     legend.position = "right"
-#   )
-# 
-# print(p1)
-# ggsave(filename = "figure/05_CellChat_all_cells/01_dotplot.pdf", p, width = 10.51, height = 6.43)
-# 
-# ggsave(filename = "figure/05_CellChat_all_cells/01_dotplot.pdf", p, height = 6.69, width = 6.83)
+cellchat <- qs::qread("~/projects/Everolimus_Resistance_ccRCC/analysis/data/05_determine_key_mps_subcluster/02_cellchat_mps/01_cellchat_merge.qs", nthreads = 25)
+
+# all_sources <- c("B_Cells", "CD4_T_Cells", "CD8_T_Cells", 
+#                  "Endothelial_Cells", "Fibroblast", "Mast_Cells", 
+#                  "Mononuclear_Phagocytes", "Natural_Killer_Cells")
+all_sources <- c("Maph_Inflam_CCL3", "Maph_LA_APOE", "Mono_CD14_S100A8", "Mono_CD16_TCF7L2", "cDC1_CCSER1", "cDC2_FCER1A",
+                 "B_Cells", "CD4_T_Cells", "CD8_T_Cells", "Endothelial_Cells", "Fibroblast", "Mast_Cells", "Natural_Killer_Cells")
+
+df.net <- subsetCommunication(cellchat)
+df.net.high <- df.net$High_ERScore
+df.net.low <- df.net$Low_ERScore
+
+df.net.high <- df.net.high %>% 
+  filter(pathway_name == "TNF", source %in% all_sources, target == "Tumor_Cells") %>% 
+  arrange(desc(prob))
+df.net.low <- df.net.low %>% 
+  filter(pathway_name == "TNF", source %in% all_sources, target == "Tumor_Cells") %>% 
+  arrange(desc(prob))
+
+
+df.plot <- bind_rows(
+  High_ERScore = df.net.high,
+  Low_ERScore = df.net.low,
+  .id = "group"
+) %>%
+  mutate(
+    source = factor(source, levels = all_sources),
+    group = factor(group, levels = c("High_ERScore", "Low_ERScore")),
+    LR_pair = paste0(ligand, " - ", receptor)
+  ) %>%
+  complete(
+    source = all_sources,
+    group = c("High_ERScore", "Low_ERScore"),
+    fill = list(prob = NA, pval = 1, LR_pair = "TNF - TNFRSF1A")
+  )
+
+p <- ggplot(df.plot, aes(x = source, y = LR_pair)) +
+  geom_point(aes(size = prob, color = pval), 
+             na.rm = TRUE, alpha = 0.9) +
+  
+  facet_wrap(~group, ncol = 2, scales = "free_x") +
+  
+  # CellChat 默认配色和尺寸
+  scale_size_continuous(
+    range = c(2, 8),
+    name = "Interaction\nProbability",
+    breaks = c(0.0001, 0.001),
+    labels = expression(10^-4, 10^-3)
+  ) +
+  scale_color_gradient(
+    low = "red", high = "grey90",
+    name = "P-value",
+    limits = c(0, 0.05),
+    na.value = "white"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10, color = "black"),
+    axis.text.y = element_text(size = 10, color = "black"),
+    axis.title = element_blank(),
+    strip.background = element_rect(fill = "#F0F0F0", color = "black"),
+    strip.text = element_text(size = 12, face = "bold"),
+    panel.grid.major = element_line(colour = "grey90", size = 0.3),
+    panel.grid.minor = element_blank(),
+    panel.spacing = unit(1, "lines"),
+    legend.position = "right",
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold")
+  ) +
+  scale_x_discrete(drop = FALSE) 
+print(p)
+ggsave("manuscript_figure/Figure3/cellchat_allcells_mps_dotplot.png", width = 9.40, height = 3.64, dpi = 500)
